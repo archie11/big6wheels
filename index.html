@@ -5,25 +5,70 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Big Six Wheel 🎡</title>
 <style>
-body { font-family: Arial, sans-serif; display: flex; margin: 0; padding: 0; }
-#wheel-container { width: 500px; height: 500px; position: relative; }
+body {
+  font-family: Arial, sans-serif;
+  display: flex;
+  flex-wrap: wrap;       /* allow items to wrap on smaller screens */
+  margin: 0;
+  padding: 0;
+  justify-content: center;
+}
+
+#wheel-container {
+  width: 500px;
+  height: 500px;
+  position: relative;
+}
+
 #wheel { border: none; border-radius: 50%; }
-#pointer { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-bottom: 30px solid red; z-index: 10; }
-#controls { margin-left: 20px; width: 600px; }
+#pointer {
+  position: absolute; top: -20px; left: 50%;
+  transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 15px solid transparent;
+  border-right: 15px solid transparent;
+  border-bottom: 30px solid red;
+  z-index: 10;
+}
+
+#controls {
+  width: 600px;
+  margin-left: 20px;
+}
+
 input[type="number"] { width: 60px; margin-right: 5px; }
 button { margin: 2px; }
-#history { 
-  width: 100%;      
-  max-width: 580px; 
-  height: 300px; 
-  overflow-y: scroll; 
-  border: 1px solid #ccc; 
-  padding: 5px; 
-  background: #f9f9f9; 
+
+#history {
+  width: 100%;
+  max-width: 580px;
+  height: 300px;
+  overflow-y: scroll;
+  border: 1px solid #ccc;
+  padding: 5px;
+  background: #f9f9f9;
   font-size: 14px;
 }
+
 .win { color: green; font-weight: bold; }
 .lose { color: red; }
+
+/* Responsive design for phones/tablets */
+@media (max-width: 800px) {
+  body {
+    flex-direction: column; /* stack vertically */
+    align-items: center;
+  }
+  #controls {
+    width: 95%;
+    margin-left: 0;
+    margin-top: 20px;
+  }
+  #wheel-container {
+    width: 90%;
+    height: auto;
+  }
+}
 </style>
 </head>
 <body>
@@ -35,7 +80,7 @@ button { margin: 2px; }
 
 <div id="controls">
   <h2 id="balance">Balance: $100</h2>
-  
+
   <div id="bets">
     <h3>Bets:</h3>
     <div>1: <input type="number" id="bet1" min="0" value="0"> <button onclick="clearBet('bet1')">Clear</button></div>
@@ -104,7 +149,7 @@ function drawWheel(){
 
     // Pulsating effect
     if(i===highlightIndex){
-      const pulseWidth = 4 + 6*Math.sin(pulsePhase*Math.PI*2); // stronger pulse
+      const pulseWidth = 4 + 6*Math.sin(pulsePhase*Math.PI*2);
       ctx.lineWidth = pulseWidth;
       ctx.strokeStyle = `rgba(255,255,255,${0.5 + 0.5*Math.sin(pulsePhase*Math.PI*2)})`;
     } else {
@@ -161,7 +206,7 @@ function spinWheel(){
   let totalWin=0, winText=[], loseText=[];
   for(let k in bets){
     const amt=bets[k]; if(amt===0) continue;
-    if(k===result){const net=amt*MULTIPLIER[k]; totalWin+=net+amt; winText.push(`<span class="win">${k}+${net}</span>`);}
+    if(k===result){const net=amt*MULTIPLIER[k]; totalWin+=net; winText.push(`<span class="win">${k}+${net}</span>`);}
     else{loseText.push(`<span class="lose">${k}-${amt}</span>`);}
   }
   balance += totalWin;
@@ -187,7 +232,6 @@ function spinWheel(){
   const spinInterval = setInterval(()=>{
     frame++;
     rotation = targetRotation * (frame/totalFrames);
-    // tick sound
     const currentIndex = Math.floor((rotation % (2*Math.PI)) / anglePer);
     if(currentIndex !== prevTickIndex.i){
       tickSound.currentTime = 0;
@@ -196,11 +240,10 @@ function spinWheel(){
     }
     if(frame>=totalFrames){
       clearInterval(spinInterval);
-      spinning = false; // pulsating continues
+      spinning = false;
     }
   },10);
 }
 </script>
-
 </body>
 </html>
