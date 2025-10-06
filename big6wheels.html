@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Big Six Wheel 🎡</title>
+<style>
+body { font-family: Arial, sans-serif; display: flex; margin: 0; padding: 0; }
+#wheel-container { width: 500px; height: 500px; position: relative; }
+#wheel { border: none; border-radius: 50%; }
+#pointer { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-bottom: 30px solid red; z-index: 10; }
+#controls { margin-left: 20px; width: 600px; }
+input[type="number"] { width: 60px; margin-right: 5px; }
+button { margin: 2px; }
+#history { 
+  width: 100%;      
+  max-width: 580px; 
+  height: 300px; 
+  overflow-y: scroll; 
+  border: 1px solid #ccc; 
+  padding: 5px; 
+  background: #f9f9f9; 
+  font-size: 14px;
+}
+.win { color: green; font-weight: bold; }
+.lose { color: red; }
+</style>
+</head>
+<body>
+
+<div id="wheel-container">
+  <canvas id="wheel" width="500" height="500"></canvas>
+  <div id="pointer"></div>
+</div>
+
+<div id="controls">
+  <h2 id="balance">Balance: $100</h2>
+  
+  <div id="bets">
+    <h3>Bets:</h3>
+    <div>1: <input type="number" id="bet1" min="0" value="0"> <button onclick="clearBet('bet1')">Clear</button></div>
+    <div>3: <input type="number" id="bet3" min="0" value="0"> <button onclick="clearBet('bet3')">Clear</button></div>
+    <div>6: <input type="number" id="bet6" min="0" value="0"> <button onclick="clearBet('bet6')">Clear</button></div>
+    <div>12: <input type="number" id="bet12" min="0" value="0"> <button onclick="clearBet('bet12')">Clear</button></div>
+    <div>25: <input type="number" id="bet25" min="0" value="0"> <button onclick="clearBet('bet25')">Clear</button></div>
+    <div>50 Joker: <input type="number" id="bet50J" min="0" value="0"> <button onclick="clearBet('bet50J')">Clear</button></div>
+    <div>50 Flag: <input type="number" id="bet50F" min="0" value="0"> <button onclick="clearBet('bet50F')">Clear</button></div>
+    <button onclick="clearAllBets()">Clear All Bets</button>
+  </div>
+
+  <div><button onclick="spinWheel()">Spin 🎡</button></div>
+
+  <div>
+    Deposit: <input type="number" id="deposit" min="0" value="0">
+    <button onclick="deposit()">Deposit</button>
+    Withdraw: <input type="number" id="withdraw" min="0" value="0">
+    <button onclick="withdraw()">Withdraw</button>
+  </div>
+
+  <h3>Result:</h3>
+  <p id="result">Spin result will appear here.</p>
+
+  <h3>History:</h3>
+  <div id="history"></div>
+</div>
+
+<script>
+const SEGMENTS = [
+  "1","3","1","6","1","3","1","12","1","6","1","3","1","25",
+  "1","3","1","6","1","12","1","3","1","3","1","3","50 Joker",
+  "1","3","1","6","1","12","1","3","1","6","1","3","1","25",
+  "1","3","1","6","1","12","1","3","6","1","3","1","50 Flag"
+];
+const MULTIPLIER = {"1":1,"3":3,"6":6,"12":12,"25":25,"50 Joker":50,"50 Flag":50};
+const COLORS = {"1":"green","3":"skyblue","6":"yellow","12":"blue","25":"violet","50 Joker":"red","50 Flag":"gray"};
+
+let balance = 100;
+let historyCount = 0;
+
+const canvas = document.getElementById("wheel");
+const ctx = canvas.getContext("2d");
+const center = 250;
+const radius = 240;
+const anglePer = 2*Math.PI/SEGMENTS.length;
+let rotation = 0;
+let highlightIndex = null;
+let pulsePhase = 0;
+let spinning = false;
+
+// Tick sound
+const tickSound = new Audio("https://freesound.org/data/previews/272/272179_5121236-lq.mp3");
+
+function drawWheel(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  SEGMENTS.forEach((label,i)=>{
+    const start = rotation + i*anglePer;
+    const end = start + anglePer;
+    ctx.beginPath();
+    ctx.moveTo(center,center);
+    ctx.arc(center,center,radius,start,end);
+    ctx.closePath();
+    ctx.fillStyle = COLORS[label] || "lightgray";
+    ctx.fill();
+
+    // Pulsating effect
+    if(i===highlightIndex){
+      const pulseWidth = 4 + 6*Math.sin(pulsePhase*Math.PI*2); // stronger pulse
+      ctx.lineWidth = pulseWidth;
+      ctx.strokeStyle = `rgba(255,255,255,${0.5 + 0.5*Math.sin(pulsePhase*Math.PI*2)})`;
+    } else {
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "black";
+    }
+    ctx.stroke();
+
+    const angle = start + anglePer/2;
+    ctx.save();
+    ctx.translate(center,center);
+    ctx.rotate(angle);
+    ctx.textAlign="right";
+    ctx.fillStyle="black";
+    ctx.font="14px Arial";
+    ctx.fillText(label,radius-20,5);
+    ctx.restore();
+  });
+}
+
+function animateWheel(){
+  requestAnimationFrame(animateWheel);
+  pulsePhase += 0.05;
+  drawWheel();
+}
+animateWheel(); // continuous animation
+
+function updateBalance(){document.getElementById("balance").innerText=`Balance: $${balance}`;}
+function clearBet(id){document.getElementById(id).value=0;}
+function clearAllBets(){["bet1","bet3","bet6","bet12","bet25","bet50J","bet50F"].forEach(clearBet);}
+function deposit(){const amt=parseInt(document.getElementById("deposit").value)||0;if(amt>0)balance+=amt;updateBalance();document.getElementById("deposit").value=0;}
+function withdraw(){const amt=parseInt(document.getElementById("withdraw").value)||0;if(amt>0 && amt<=balance)balance-=amt;updateBalance();document.getElementById("withdraw").value=0;}
+
+function spinWheel(){
+  const bets = {
+    "1":parseInt(document.getElementById("bet1").value)||0,
+    "3":parseInt(document.getElementById("bet3").value)||0,
+    "6":parseInt(document.getElementById("bet6").value)||0,
+    "12":parseInt(document.getElementById("bet12").value)||0,
+    "25":parseInt(document.getElementById("bet25").value)||0,
+    "50 Joker":parseInt(document.getElementById("bet50J").value)||0,
+    "50 Flag":parseInt(document.getElementById("bet50F").value)||0
+  };
+  const totalBet = Object.values(bets).reduce((a,b)=>a+b,0);
+  if(totalBet>balance){alert("Not enough balance");return;}
+  balance -= totalBet;
+  updateBalance();
+
+  const resultIndex = Math.floor(Math.random()*SEGMENTS.length);
+  const result = SEGMENTS[resultIndex];
+  highlightIndex = resultIndex;
+
+  // Payout calculation
+  let totalWin=0, winText=[], loseText=[];
+  for(let k in bets){
+    const amt=bets[k]; if(amt===0) continue;
+    if(k===result){const net=amt*MULTIPLIER[k]; totalWin+=net+amt; winText.push(`<span class="win">${k}+${net}</span>`);}
+    else{loseText.push(`<span class="lose">${k}-${amt}</span>`);}
+  }
+  balance += totalWin;
+  updateBalance();
+
+  const resultDisplay=`🎡 Landed on ${result} | ${winText.length>0?"🎉 Won: "+winText.join(", ")+" | ":""}${loseText.length>0?"❌ Lost: "+loseText.join(", "):""}`;
+  document.getElementById("result").innerHTML = resultDisplay;
+
+  const betsText = Object.entries(bets).filter(([k,v])=>v>0).map(([k,v])=>`${k}:${v}`).join(", ");
+  const historyDiv = document.getElementById("history");
+  historyCount++;
+  historyDiv.innerHTML = `${historyCount}. Bets: ${betsText} | ${resultDisplay} | Balance: $${balance}<br>` + historyDiv.innerHTML;
+  historyDiv.scrollTop = 0;
+
+  // Spin animation
+  spinning = true;
+  const fullRotations = 8;
+  const targetRotation = fullRotations*2*Math.PI + (SEGMENTS.length - resultIndex - 0.5)*anglePer;
+  let frame = 0;
+  const totalFrames = 50;
+  const prevTickIndex = {i:-1};
+
+  const spinInterval = setInterval(()=>{
+    frame++;
+    rotation = targetRotation * (frame/totalFrames);
+    // tick sound
+    const currentIndex = Math.floor((rotation % (2*Math.PI)) / anglePer);
+    if(currentIndex !== prevTickIndex.i){
+      tickSound.currentTime = 0;
+      tickSound.play();
+      prevTickIndex.i = currentIndex;
+    }
+    if(frame>=totalFrames){
+      clearInterval(spinInterval);
+      spinning = false; // pulsating continues
+    }
+  },10);
+}
+</script>
+
+</body>
+</html>
