@@ -28,8 +28,44 @@ body {
 }
 
 input[type="number"] { width: 60px; margin-right: 5px; }
-button { margin: 2px; }
 
+/* General button styling */
+button {
+  margin: 5px 5px 10px 0;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 5px;
+  border: none;
+}
+
+/* Spin button specific */
+#spinBtn {
+  background-color: orange;
+  color: white;
+  font-weight: bold;
+  font-size: 18px;
+  padding: 12px 30px;
+  margin-top: 10px;
+}
+
+/* Bets layout - two columns */
+.bet-columns {
+  display: flex;
+  gap: 30px; /* space between columns */
+  margin-bottom: 10px;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+}
+
+.column div {
+  margin-bottom: 8px; /* space between each bet input */
+}
+
+/* History styling */
 #history {
   width: 100%;
   max-width: 580px;
@@ -59,6 +95,7 @@ button { margin: 2px; }
     width: 90%;
     height: auto;
   }
+  .bet-columns { flex-direction: column; gap: 10px; }
 }
 </style>
 </head>
@@ -73,17 +110,25 @@ button { margin: 2px; }
 
   <div id="bets">
     <h3>Bets:</h3>
-    <div>1: <input type="number" id="bet1" min="0" value="0"> <button onclick="clearBet('bet1')">Clear</button></div>
-    <div>3: <input type="number" id="bet3" min="0" value="0"> <button onclick="clearBet('bet3')">Clear</button></div>
-    <div>6: <input type="number" id="bet6" min="0" value="0"> <button onclick="clearBet('bet6')">Clear</button></div>
-    <div>12: <input type="number" id="bet12" min="0" value="0"> <button onclick="clearBet('bet12')">Clear</button></div>
-    <div>25: <input type="number" id="bet25" min="0" value="0"> <button onclick="clearBet('bet25')">Clear</button></div>
-    <div>50 Joker: <input type="number" id="bet50J" min="0" value="0"> <button onclick="clearBet('bet50J')">Clear</button></div>
-    <div>50 Flag: <input type="number" id="bet50F" min="0" value="0"> <button onclick="clearBet('bet50F')">Clear</button></div>
+    <div class="bet-columns">
+      <div class="column">
+        <div>1: <input type="number" id="bet1" min="0" value="0"> <button onclick="clearBet('bet1')">Clear</button></div>
+        <div>3: <input type="number" id="bet3" min="0" value="0"> <button onclick="clearBet('bet3')">Clear</button></div>
+        <div>6: <input type="number" id="bet6" min="0" value="0"> <button onclick="clearBet('bet6')">Clear</button></div>
+        <div>12: <input type="number" id="bet12" min="0" value="0"> <button onclick="clearBet('bet12')">Clear</button></div>
+      </div>
+      <div class="column">
+        <div>25: <input type="number" id="bet25" min="0" value="0"> <button onclick="clearBet('bet25')">Clear</button></div>
+        <div>50 Joker: <input type="number" id="bet50J" min="0" value="0"> <button onclick="clearBet('bet50J')">Clear</button></div>
+        <div>50 Flag: <input type="number" id="bet50F" min="0" value="0"> <button onclick="clearBet('bet50F')">Clear</button></div>
+      </div>
+    </div>
     <button onclick="clearAllBets()">Clear All Bets</button>
   </div>
 
-  <div><button onclick="spinWheel()">Spin 🎡</button></div>
+  <div>
+    <button id="spinBtn" onclick="spinWheel()">Spin 🎡</button>
+  </div>
 
   <div>
     Deposit: <input type="number" id="deposit" min="0" value="0">
@@ -195,9 +240,9 @@ function spinWheel(){
   for(let k in bets){
     const amt=bets[k]; if(amt===0) continue;
     if(k===result){
-      const net = amt * MULTIPLIER[k];   // net profit only
-      totalWin += net + amt;             // add bet back + winnings
-      winText.push(`<span class="win">${k}+${net}</span>`); // net shown in history
+      const net = amt * MULTIPLIER[k];
+      totalWin += net + amt;
+      winText.push(`<span class="win">${k}+${net}</span>`);
     } else {
       loseText.push(`<span class="lose">${k}-${amt}</span>`);
     }
@@ -214,7 +259,6 @@ function spinWheel(){
   historyDiv.innerHTML = `${historyCount}. Bets: ${betsText} | ${resultDisplay} | Balance: $${balance}<br>` + historyDiv.innerHTML;
   historyDiv.scrollTop = 0;
 
-  // Spin animation
   spinning = true;
   const fullRotations = 8;
   const targetRotation = fullRotations*2*Math.PI + (SEGMENTS.length - resultIndex - 0.5)*anglePer;
